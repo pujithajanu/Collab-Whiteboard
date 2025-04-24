@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whiteboard Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fbff, #ecf2f9);
+    }
+
+    .toolbar {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: #ffffffdd;
+      padding: 10px 15px;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    .toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .toolbar input[type="color"] {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .toolbar button {
+      background-color: #f0f0f0;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .toolbar button:hover {
+      background-color: #ddd;
+    }
+
+    .canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    canvas {
+      background-color: #fff;
+      border: 5px solid #cdd8f0;
+      border-radius: 18px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.07);
+      transition: cursor 0.3s;
+    }
+
+    .draw-mode {
+      cursor: url('https://cdn-icons-png.flaticon.com/128/1159/1159633.png') 6 30, crosshair;
+    }
+
+    .eraser-mode {
+      cursor: url('https://cdn-icons-png.flaticon.com/128/686/686589.png') 10 10, crosshair;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <label>
+      🎨 Color:
+      <input type="color" id="colorPicker" value="#000000" />
+    </label>
+    <button id="eraserBtn">🧽 Eraser</button>
+  </div>
+
+  <div class="canvas-container">
+    <canvas id="whiteboard"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('whiteboard');
+    const ctx = canvas.getContext('2d');
+    const colorPicker = document.getElementById('colorPicker');
+    const eraserBtn = document.getElementById('eraserBtn');
+  
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let isErasing = false;
+    let drawColor = colorPicker.value;
+  
+    function resizeCanvas() {
+      canvas.width = window.innerWidth - 60;
+      canvas.height = window.innerHeight - 60;
+    }
+  
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+  
+    // Removed the cursor update function as per request
+    // updateCursor();
+  
+    canvas.addEventListener('mousedown', (e) => {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
+    });
+  
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      ctx.strokeStyle = isErasing ? '#ffffff' : drawColor;
+      ctx.lineWidth = isErasing ? 20 : 2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
+    });
+  
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mouseout', () => isDrawing = false);
+  
+    colorPicker.addEventListener('input', () => {
+      drawColor = colorPicker.value;
+      isErasing = false;
+      // Removed updateCursor() here as well
+    });
+  
+    eraserBtn.addEventListener('click', () => {
+      isErasing = !isErasing;
+      eraserBtn.textContent = isErasing ? '✏️ Draw' : '🧽 Eraser';
+      // No updateCursor() call here
+    });
+  </script>
+  
+</body>
+</html>
