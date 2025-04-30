@@ -7,27 +7,38 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // allow all origins (you can restrict later)
+    origin: '*', // In production, restrict this to your frontend domain
     methods: ['GET', 'POST']
   }
 });
 
-// Basic route
+app.use(cors());
+app.use(express.json());
+
+// Health check
 app.get('/', (req, res) => {
-  res.send('Server is running ✅');
+  res.send('✅ Whiteboard Server is Live!');
 });
 
-// Socket.IO connection
+// Socket.IO events
 io.on('connection', (socket) => {
-  console.log('🟢 A user connected:', socket.id);
+  console.log('🟢 New connection:', socket.id);
+
+  socket.on('draw-coordinates', (data) => {
+    socket.broadcast.emit('draw-coordinates', data);
+  });
+
+  socket.on('chat-message', (data) => {
+    socket.broadcast.emit('chat-message', data);
+  });
 
   socket.on('disconnect', () => {
-    console.log('🔴 A user disconnected:', socket.id);
+    console.log('🔴 Disconnected:', socket.id);
   });
 });
 
-// Run server
-const PORT = 3000;
+// Start server
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server is listening on http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

@@ -1,0 +1,146 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #f8fbff, #ecf2f9);
+}
+
+/* === Toolbar === */
+.toolbar {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: #ffffffdd;
+  padding: 10px 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.toolbar input[type="color"] {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.toolbar button {
+  background-color: #f0f0f0;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.toolbar button:hover {
+  background-color: #ddd;
+}
+
+/* === Canvas === */
+.canvas-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+canvas {
+  background-color: #fff;
+  border: 5px solid #cdd8f0;
+  border-radius: 18px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.07);
+  transition: cursor 0.3s;
+}
+
+.draw-mode {
+  cursor: url('https://cdn-icons-png.flaticon.com/128/1159/1159633.png') 6 30, crosshair;
+}
+
+.eraser-mode {
+  cursor: url('https://cdn-icons-png.flaticon.com/128/686/686589.png') 10 10, crosshair;
+}
+
+/* === Chatbox === */
+.chatbox {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 300px;
+  background: #ffffffee;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  z-index: 1000;
+}
+
+.chat-messages {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #dde4f3;
+  border-radius: 10px;
+  padding: 8px;
+  background-color: #f9fbff;
+  margin-bottom: 10px;
+  font-size: 13.5px;
+  color: #333;
+}
+
+.chat-messages strong {
+  color: #0b57d0;
+}
+
+.chat-input {
+  display: flex;
+  gap: 8px;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  outline: none;
+  font-size: 13.5px;
+}
+
+.chat-input button {
+  background-color: #0b57d0;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.chat-input button:hover {
+  background-color: #0949b2;
+}
