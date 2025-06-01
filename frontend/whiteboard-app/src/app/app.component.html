@@ -1,36 +1,50 @@
-<!-- Toolbar -->
+<!-- app.component.html -->
 <div class="toolbar">
-  <label class="color-picker">
-    🎨
-    <input type="color" [(ngModel)]="drawColor" (input)="disableEraser()" />
-  </label>
-  <button class="toggle-btn" (click)="toggleEraser()">
-    {{ isErasing ? '✏️ Draw' : '🧽 Eraser' }}
-  </button>
+  <input type="color" [(ngModel)]="drawColor" title="Choose Pen Color" />
+
+  <button (click)="selectTool('pen')">Pen</button>
+  <button (click)="selectTool('eraser')">Eraser</button>
+  <button (click)="selectTool('lock')">Lock Area</button>
+<button (click)="unlockAll()" [disabled]="deselectButtonDisabled">Unlock All</button>
+
+
+
+<button (click)="redoLast()" [disabled]="redoStack.length === 0">Redo</button>
+
+  <button (click)="undoLast()">Undo</button>
+  <button (click)="clearCanvas()">Clear</button>
+  <button (click)="refreshCanvas()">Refresh</button>
 </div>
 
-<!-- Canvas Area -->
-<div class="canvas-container">
-  <canvas
-    #whiteboard
-    (mousedown)="startDrawing($event)"
-    (mousemove)="draw($event)"
-    (mouseup)="stopDrawing()"
-    (mouseout)="stopDrawing()"
-    [class.eraser-mode]="isErasing"
-    [class.draw-mode]="!isErasing"
-  ></canvas>
+
+<div *ngFor="let lock of lockedAreas"
+     class="lock-box"
+     [attr.data-id]="lock.id"
+     [ngStyle]="{
+       left: lock.x + 'px',
+       top: lock.y + 'px',
+       width: lock.width + 'px',
+       height: lock.height + 'px'
+     }"
+     (mouseenter)="lock.hover = true"
+     (mouseleave)="lock.hover = false">
+
+  <button *ngIf="lock.hover && lock.lockedBy === userId"
+          class="unlock-btn"
+          (click)="manualUnlock(lock.id)">✖</button>
 </div>
 
-<!-- Chatbox -->
-<div class="chatbox">
-  <div class="chat-messages" #chatWindow>
+<canvas #whiteboard></canvas>
+
+<div class="chat-box" *ngIf="chatBoxOpen">
+  <div class="chat-messages">
     <div *ngFor="let msg of chatMessages">
       <strong>{{ msg.username }}:</strong> {{ msg.message }}
     </div>
   </div>
-  <div class="chat-input">
-    <input [(ngModel)]="chatInput" placeholder="Type a message..." />
-    <button (click)="sendMessage()">Send</button>
-  </div>
+  <input [(ngModel)]="chatInput" (keyup.enter)="sendMessage()" placeholder="Type a message..." />
 </div>
+
+<button class="toggle-chat" (click)="toggleChatBox()">
+  💬 Chat <span *ngIf="showChatNotification">🔔</span>
+</button>
