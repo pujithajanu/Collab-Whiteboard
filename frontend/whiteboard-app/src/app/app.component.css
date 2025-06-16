@@ -11,7 +11,7 @@ body {
 }
 .lock-box {
   position: absolute;
-  border: #0000ff; /* Solid blue */
+  border: #525270; /* Solid blue */
   pointer-events: none;
 }
 

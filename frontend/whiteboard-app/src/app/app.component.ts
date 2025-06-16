@@ -79,8 +79,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.socketService['socket'].on(
       'init-drawing-actions',
       (actions: any[]) => {
-        this.drawingActions = [];
-        this.lockedAreas = [];
+        
         for (const a of actions) {
           if (a.type !== 'clear') {
             this.addLockArea(a);
@@ -89,6 +88,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         }
       },
+      
     );
 
     this.socketService['socket'].on('init-lock-areas', (locks: any[]) => {
@@ -100,16 +100,17 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     /* ---------------- live events ---------------- */
-    this.socketService['socket'].on('lock-area', data => {
-      if (!this.lockedAreas.some(l => l.id === data.id)) {
-        this.lockedAreas.push(data);
-        this.drawLockOverlay(data);
-        if (data.lockedBy === this.userId) this.deselectButtonDisabled = false;
+ this.socketService['socket'].on('lock-area', data => {
+  if (!this.lockedAreas.some(l => l.id === data.id)) {
+    this.lockedAreas.push(data);
+    this.drawAllLocks(); // 🟩 Ensure entire canvas sees lock box immediately
+    if (data.lockedBy === this.userId) this.deselectButtonDisabled = false;
 
-        /* auto-unlock after 5 min */
-        setTimeout(() => this.unlockArea(data.id), 5 * 60 * 1000);
-      }
-    });
+    // Auto-unlock
+    setTimeout(() => this.unlockArea(data.id), 5 * 60 * 1000);
+  }
+});
+
 
     this.socketService['socket'].on('draw-coordinates', data => {
       this.drawFromOtherUser(data);
@@ -136,6 +137,7 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.lockedAreas = [];
       this.redrawCanvas();
     });
+
   }
 
   ngAfterViewInit(): void {
@@ -148,6 +150,8 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     canvas.addEventListener('mousemove', this.onMouseMove);
     canvas.addEventListener('mouseup', this.onMouseUp);
     canvas.addEventListener('mouseleave', () => (this.isMousePressed = false));
+    this.drawAllLocks(); // ✅ force draw of any existing lock boxes
+
   }
 
   ngOnDestroy(): void {
@@ -167,14 +171,21 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.lockPreview = null;
     this.isDrawing = false;
   };
+undoLast = (): void => {
+  for (let i = this.drawingActions.length - 1; i >= 0; i--) {
+    if (this.drawingActions[i].userId === this.userId) {
+      const last = this.drawingActions.splice(i, 1)[0];
+      this.redoStack.push(last);
+      this.redrawCanvas();
 
-  undoLast = (): void => {
-    if (!this.drawingActions.length) return;
-    const last = this.drawingActions.pop()!;
-    this.redoStack.push(last);
-    this.redrawCanvas();
-    this.socketService.emit('undo-action', last);
-  };
+      // ⬇️ Emit full action to remove
+      this.socketService.emit('undo-action', last);
+      break;
+    }
+  }
+};
+
+
 
   redoLast = (): void => {
     if (!this.redoStack.length) return;
@@ -280,11 +291,16 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.ctx.setLineDash([5, 5]);
       this.ctx.strokeStyle = 'rgba(0,0,255,0.4)';
       this.ctx.strokeRect(this.lockPreview.x, this.lockPreview.y, this.lockPreview.width, this.lockPreview.height);
+      
       this.ctx.restore();
       return;
     }
 
-    if (['pen', 'eraser'].includes(this.currentTool) && !this.isInLockedArea(x, y)) {
+   if (
+  ['pen', 'eraser'].includes(this.currentTool) &&
+  !this.isLineIntersectingLockedArea(this.lastX, this.lastY, x, y)
+)
+ {
       this.ctx.beginPath();
       this.ctx.moveTo(this.lastX, this.lastY);
       this.ctx.lineTo(x, y);
@@ -292,16 +308,18 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.ctx.lineWidth = this.isErasing ? 20 : 2;
       this.ctx.lineCap = 'round';
       this.ctx.stroke();
+      this.drawAllLocks(); 
 
-      const draw = {
-        id: crypto.randomUUID(),
-        fromX: this.lastX,
-        fromY: this.lastY,
-        toX: x,
-        toY: y,
-        isErasing: this.isErasing,
-        color: this.isErasing ? '#ffffff' : this.drawColor,
-      };
+const draw = {
+  id: crypto.randomUUID(),
+  fromX: this.lastX,
+  fromY: this.lastY,
+  toX: x,
+  toY: y,
+  isErasing: this.isErasing,
+  color: this.isErasing ? '#ffffff' : this.drawColor,
+  userId: this.userId, // ✅ Track who drew it
+};
 
       this.drawingActions.push(draw);
       this.socketService.emit('draw-coordinates', draw);
@@ -327,8 +345,30 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
       this.lockPreview = null;
       this.selectTool(this.previousTool);
       this.deselectButtonDisabled = false;
+      this.drawAllLocks(); 
     }
   };
+isLineIntersectingLockedArea(x1: number, y1: number, x2: number, y2: number): boolean {
+  for (const lock of this.lockedAreas) {
+    if (lock.lockedBy === this.userId) continue;
+
+    const left = lock.x;
+    const right = lock.x + lock.width;
+    const top = lock.y;
+    const bottom = lock.y + lock.height;
+
+    // Simple AABB line intersection check (bounding box)
+    if (
+      Math.min(x1, x2) < right &&
+      Math.max(x1, x2) > left &&
+      Math.min(y1, y2) < bottom &&
+      Math.max(y1, y2) > top
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 
   isInLockedArea(x: number, y: number): boolean {
     return this.lockedAreas.some(
@@ -359,14 +399,24 @@ export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
     this.drawAllLocks();
   }
 
-  drawLockOverlay(lock: LockBox): void {
-    this.ctx.save();
-    this.ctx.setLineDash([4, 4]);
-    this.ctx.strokeStyle = lock.lockedBy === this.userId ? 'green' : 'red';
-    this.ctx.strokeRect(lock.x, lock.y, lock.width, lock.height);
-    this.ctx.setLineDash([]);
-    this.ctx.restore();
+drawLockOverlay(lock: LockBox): void {
+  this.ctx.save();
+  this.ctx.setLineDash([4, 4]);
+  this.ctx.strokeStyle = lock.lockedBy === this.userId ? 'green' : 'red';
+  this.ctx.lineWidth = 1;
+  this.ctx.strokeRect(lock.x, lock.y, lock.width, lock.height);
+
+  // ✅ Draw username
+  if ((lock as any).username) {
+    this.ctx.font = '12px Arial';
+    this.ctx.fillStyle = 'blue';
+    this.ctx.fillText((lock as any).username, lock.x + 5, lock.y - 5);
   }
+
+  this.ctx.setLineDash([]);
+  this.ctx.restore();
+}
+
 
   drawAllLocks(): void {
     this.lockedAreas.forEach(l => this.drawLockOverlay(l));

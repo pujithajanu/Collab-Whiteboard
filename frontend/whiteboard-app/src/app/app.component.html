@@ -7,10 +7,6 @@
   <button (click)="selectTool('lock')">Lock Area</button>
 <button (click)="unlockAll()" [disabled]="deselectButtonDisabled">Unlock All</button>
 
-
-
-<button (click)="redoLast()" [disabled]="redoStack.length === 0">Redo</button>
-
   <button (click)="undoLast()">Undo</button>
   <button (click)="clearCanvas()">Clear</button>
   <button (click)="refreshCanvas()">Refresh</button>

@@ -13,6 +13,13 @@ export class SocketService {
       transports: ['websocket']  // Ensures connection is via websocket
     });
   }
+emitUndoAction(data: any) {
+  this.socket.emit('undoAction', data);
+}
+
+onUndoAction(callback: (data: any) => void) {
+  this.socket.on('undoAction', callback);
+}
 
   // Method to listen for events from the server
   public on(eventName: string, callback: (...args: any[]) => void): void {
